@@ -1,0 +1,122 @@
+model:
+  pretrained_llm: /home/salm/models/gemma-4-E2B-it
+  pretrained_asr: /home/salm/models/canary-1b-flash/canary-1b-flash.nemo
+  pretrained_weights: True
+
+  freeze_params:
+    - "^llm\\..+$"
+    - "^perception\\.preprocessor\\..+$"
+    - "^perception\\.encoder\\..+$"
+  prevent_freeze_params:
+    - "^embed_tokens\\..+$"
+
+  prompt_format: gemma4
+  audio_locator_tag: "<|audioplaceholder|>"
+
+  # ── dataset pattern ──────────────────────────────────────────────────
+  # "continuation" : cross-modal continuation (A_n → predict T_{n+1})
+  # "repetition"   : classic ASR repetition  (A_n → predict T_n)
+  # "mixed"        : per-sample "pattern" key in the manifest
+  dataset_pattern: continuation
+
+  perception:
+     target: nemo.collections.speechlm2.modules.perception.AudioPerceptionModule
+     output_dim: 1536
+     modality_adapter:
+       _target_: nemo.collections.speechlm2.modules.perception.IdentityConnector
+       d_model: 1024
+
+  optimizer:
+    _target_: torch.optim.AdamW
+    lr: 5e-4
+    betas: [0.9, 0.98]
+    weight_decay: 1e-3
+    foreach: true
+
+  lr_scheduler:
+    _target_: nemo.core.optim.lr_scheduler.CosineAnnealing
+    warmup_steps: 1000
+    min_lr: 1e-6
+    max_steps: ${trainer.max_steps}
+
+
+training_mode: continuation
+
+trainer:
+  devices: -1
+  accelerator: gpu
+  num_nodes: 1
+  precision: bf16-true
+  logger: False
+  enable_checkpointing: False
+  use_distributed_sampler: False
+  max_steps: 100000
+  limit_train_batches: 5000
+  val_check_interval: ${trainer.limit_train_batches}
+  limit_val_batches: 10
+  log_every_n_steps: 10
+  num_sanity_val_steps: 1
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  strategy:
+    _target_: lightning.pytorch.strategies.DDPStrategy
+    gradient_as_bucket_view: true
+    find_unused_parameters: true
+
+data:
+  train_ds:
+    sample_rate: 16000
+    prompt_format: ${model.prompt_format}
+    token_equivalent_duration: 0.08
+    # ── pattern forwarded to SALMDataset ─────────────────────────────
+    dataset_pattern: ${model.dataset_pattern}
+    input_cfg:
+      - type: multimodal_conversation
+        cuts_path: /home/salm/dataset/svarah_merged/cuts.jsonl.gz
+        audio_locator_tag: "<|audioplaceholder|>"
+    seed: 42
+    shuffle: true
+    shard_seed: "randomized"
+    num_workers: 1
+    batch_size: 4
+
+  validation_ds:
+    prompt_format: ${model.prompt_format}
+    token_equivalent_duration: 0.08
+    dataset_pattern: ${model.dataset_pattern}
+    datasets:
+      val_set_0:
+        input_cfg:
+          - type: multimodal_conversation
+            cuts_path: /home/salm/dataset/svarah_merged/cuts.jsonl.gz
+            audio_locator_tag: "<|audioplaceholder|>"
+    sample_rate: 16000
+    batch_size: 1
+    seed: 42
+    shard_seed: "randomized"
+
+exp_manager:
+   exp_dir: null
+   explicit_log_dir: salm_results/
+   name: salm
+   create_tensorboard_logger: false
+   create_checkpoint_callback: true
+   use_datetime_version: true
+   max_time_per_run: 00:03:50:00
+   resume_from_checkpoint: null
+   resume_if_exists: true
+   resume_ignore_no_checkpoint: true
+   create_wandb_logger: true
+   wandb_logger_kwargs:
+     name: development-run
+     project: salm
+     resume: true
+   checkpoint_callback_params:
+     filename: "{step}"
+     monitor: val_acc
+     mode: max
+     every_n_train_steps: null
+     every_n_epochs: 1
+     save_top_k: 1
+     always_save_nemo: false
+     save_nemo_on_train_end: false
