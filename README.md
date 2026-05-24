@@ -126,3 +126,5 @@ torchrun --nproc-per-node=8 /home/salm/NeMo/examples/speechlm2/salm_train.py \
 - All paths assume the `salm` user layout (`/home/salm/NeMo`, `/home/salm/conf`). Adjust if your environment differs.
 - `--nproc-per-node=8` assumes a single node with 8 GPUs. For multi-node runs, set `--nnodes`, `--node-rank`, and `--master-addr`/`--master-port` accordingly.
 - The original notes reused `salm_gemma4_v2_3` for both v2.3 and v3.1 — confirm a dedicated `salm_gemma4_v3_1` config exists before launching the continuation run.
+
+Note: In configs added 2 bug fixes - solved by BodhanAI (Aryan and Kaushal) on LoRA support and Tie embed_tokens for Gemma4.
