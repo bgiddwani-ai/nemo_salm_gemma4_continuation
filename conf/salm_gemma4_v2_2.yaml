@@ -22,11 +22,11 @@ model:
   #   and prevent freezing any parameter that has the string '.lora_' in its name.
   # lora:
   #   task_type: CAUSAL_LM
-  #   r: 128
-  #   lora_alpha: 256
-  #   lora_dropout: 0.01
+  #   r: 16
+  #   lora_alpha: 32
+  #   lora_dropout: 0.05
   #   # target_modules are only necessary if the `pretrained_llm` is not yet registered in PEFT library
-  #   target_modules: ["q_proj", "v_proj"]
+  #   target_modules: '^.*language_model\.layers\.\d+\.(self_attn\.(q_proj| k_proj|v_proj|o_proj)|mlp\.(gate_proj|up_proj|down_proj))$'
 
   perception:
      target: nemo.collections.speechlm2.modules.perception.AudioPerceptionModule
