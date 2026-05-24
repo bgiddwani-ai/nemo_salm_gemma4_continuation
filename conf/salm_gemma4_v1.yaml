@@ -11,8 +11,6 @@ model:
     - "^llm\\..+$"  # LLM
     - "^perception\\.preprocessor\\..+$"
     - "^perception\\.encoder\\..+$"
-  prevent_freeze_params:
-    - "^embed_tokens\\..+$"
 
   prevent_freeze_params:
     - "^perception\\.proj\\..+$"
