@@ -13,6 +13,11 @@ model:
     - "^perception\\.encoder\\..+$"
   prevent_freeze_params:
     - "^embed_tokens\\..+$"
+
+  prevent_freeze_params:
+    - "^perception\\.proj\\..+$"
+    - "^embed_tokens\\..+$" # kept for PEFT-wrapped training paths
+    - "^llm\\.lm_head\\..+$" # the actual canonical name after
     
   prompt_format: gemma4
   audio_locator_tag: "<|audioplaceholder|>"  # placeholder token for audio turn is expected
