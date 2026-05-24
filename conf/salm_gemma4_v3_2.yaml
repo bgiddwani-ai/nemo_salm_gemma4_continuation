@@ -19,6 +19,14 @@ model:
   # "mixed"        : per-sample "pattern" key in the manifest
   dataset_pattern: continuation
 
+  lora:
+    task_type: CAUSAL_LM
+    r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05
+    # target_modules are only necessary if the `pretrained_llm` is not yet registered in PEFT library
+    target_modules: '^.*language_model\.layers\.\d+\.(self_attn\.(q_proj| k_proj|v_proj|o_proj)|mlp\.(gate_proj|up_proj|down_proj))$'
+
   perception:
      target: nemo.collections.speechlm2.modules.perception.AudioPerceptionModule
      output_dim: 1536
